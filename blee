@@ -1,92 +1,31 @@
 #!/bin/bash
 ln -fs /usr/share/zoneinfo/Asia/Manila /etc/localtime
 sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config &> /dev/null
-#change this according to your database details
-RED='\033[01;31m';
-RESET='\033[0m';
-GREEN='\033[01;32m';
-WHITE='\033[01;37m';
-YELLOW='\033[00;33m';
-fun_bar () {
-comando[0]="$1"
-comando[1]="$2"
- (
-[[ -e $HOME/fim ]] && rm $HOME/fim
-${comando[0]} -y > /dev/null 2>&1
-${comando[1]} -y > /dev/null 2>&1
-touch $HOME/fim
- ) > /dev/null 2>&1 &
- tput civis
-echo -ne "  \033[1;33mSSH\033[1;37m- \033[1;33m["
-while true; do
-   for((i=0; i<18; i++)); do
-   echo -ne "\033[1;31m#"
-   sleep 0.1s
-   done
-   [[ -e $HOME/fim ]] && rm $HOME/fim && break
-   echo -e "\033[1;33m]"
-   sleep 1s
-   tput cuu1
-   tput dl1
-   echo -ne "  \033[1;33mSSH \033[1;37m- \033[1;33m["
-done
-echo -e "\033[1;33m]\033[1;37m -\033[1;32m INSTALLED !\033[1;37m"
-tput cnorm
-}
-fun_bar2 () {
-comando[0]="$1"
-comando[1]="$2"
- (
-[[ -e $HOME/fim ]] && rm $HOME/fim
-${comando[0]} -y > /dev/null 2>&1
-${comando[1]} -y > /dev/null 2>&1
-touch $HOME/fim
- ) > /dev/null 2>&1 &
- tput civis
-echo -ne "  \033[1;33mPACTHING AUTH \033[1;37m- \033[1;33m["
-while true; do
-   for((i=0; i<18; i++)); do
-   echo -ne "\033[1;31m#"
-   sleep 0.1s
-   done
-   [[ -e $HOME/fim ]] && rm $HOME/fim && break
-   echo -e "\033[1;33m]"
-   sleep 1s
-   tput cuu1
-   tput dl1
-   echo -ne "  \033[1;33mPACTHING AUTH \033[1;37m- \033[1;33m["
-done
-echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
-tput cnorm
-}
-
 
 show_menu () {
 echo -e "                $GREEN
-
 █▀▄▀█ █ █▀▀ █░█ ▄▀█ █▀▀ █░░ █▀▀   ▄▀█ █▄▄ ▄▀█ █░░ █▀█ █▀
 █░▀░█ █ █▄▄ █▀█ █▀█ ██▄ █▄▄ ██▄   █▀█ █▄█ █▀█ █▄▄ █▄█ ▄█              
-
 $RESET"
 }
 install(){
 # Updating Repositories
-yum update -y
+apt update -y
 # Installing Required Packages.
-yum install epel-release -y
-yum install wget -y
-yum install mysql squid nano -y
-yum install iptables iptables-services -y
-yum install nc lsof screen -y
-yum install NetworkManager -y
+apt install epel-release -y
+apt install wget -y
+apt install mysql squid nano -y
+apt install iptables iptables-services -y
+apt install nc lsof screen -y
+apt install NetworkManager -y
 MYIP=$(wget -qO- ipv4.icanhazip.com);
 # Installing Dropbear and Stunnel
 
-yum -y install stunnel dropbear &> /dev/null
+apt -y install stunnel dropbear &> /dev/null
 #sudo mkdir /var/run/stunnel &> /dev/null
 #sudo chown nobody:nobody /var/run/stunnel &> /dev/null
 cat << EOF > /etc/sysconfig/dropbear
-OPTIONS=" -p 444 -p 441"
+OPTIONS=" -p 550 -p 555"
 EOF
 
 cat <<EOF >/etc/stunnel/stunnel.pem
@@ -151,22 +90,20 @@ socket = a:SO_REUSEADDR=1
 socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 [stunnel]
-connect = 127.0.0.1:444
+connect = 127.0.0.1:550
 accept = 443
 [dropbear]
-connect = 127.0.0.1:441
-accept = 445
+connect = 127.0.0.1:555
+accept = 444
 EOF
 
 cat << XYZZY > /etc/systemd/system/stunnel.service
 [Unit]
 Description=SSL tunnel for network daemons
 After=syslog.target
-
 [Service]
 ExecStart=/usr/bin/stunnel
 Type=forking
-
 [Install]
 WantedBy=multi-user.target
 XYZZY
@@ -184,10 +121,10 @@ wget --no-check-certificate -O /etc/ssl/socks.py https://raw.githubusercontent.c
 wget --no-check-certificate -O /etc/ssl/socks2.py https://raw.githubusercontent.com/freenetsapinas/Michaele/main/441.py -q
 /bin/cat <<"EOM" >/root/vpn
 nc -zv 127.0.0.1 8001 && sudo kill $( sudo lsof -i:8001 -t )
-nc -zv 127.0.0.1 445 && sudo kill $( sudo lsof -i:445 -t )
-nc -zv 127.0.0.1 441 && sudo kill $( sudo lsof -i:441 -t )
-nc -zv 127.0.0.1 80 && sudo kill $( sudo lsof -i:80 -t )
 nc -zv 127.0.0.1 444 && sudo kill $( sudo lsof -i:444 -t )
+nc -zv 127.0.0.1 550 && sudo kill $( sudo lsof -i:550 -t )
+nc -zv 127.0.0.1 80 && sudo kill $( sudo lsof -i:80 -t )
+nc -zv 127.0.0.1 555 && sudo kill $( sudo lsof -i:555 -t )
 nc -zv 127.0.0.1 443 && sudo kill $( sudo lsof -i:443 -t )
 screen -dmS proxy python /etc/ssl/socks.py
 screen -dmS proxy python /etc/ssl/socks2.py
@@ -214,7 +151,7 @@ systemctl enable stunnel &> /dev/null
 systemctl start stunnel
 service crond restart
 mkdir -p /usr/sbin/jho
-yum install php php-mysqli php-mysql php-gd php-mbstring -y
+apt install php php-mysqli php-mysql php-gd php-mbstring -y
 wget -O /usr/local/sbin/ssh.php https://raw.githubusercontent.com/freenetsapinas/Michaele/main/auth_prem.sh -q
 /bin/cat <<"EOM" >/usr/sbin/jho/xii.sh
 php /usr/local/sbin/ssh.php
@@ -233,16 +170,14 @@ bash vpn
 
 install_done()
 {
-  echo -e "$GREEN   WEBSOCKET SSH SERVER $RESET"
-   echo -e "$GREEN   IP ADDRESS : $(curl -s https://api.ipify.org)$RESET"
-   echo -e "$RED   DROPBEAR port : 444 $RESET"
-   echo -e "$RED   SSL port : 443 $RESET"
-   echo -e "$RED   SSH WEBSOCKET port : 80 $RESET"
-   echo -e "$YELLOW   DROPBEAR port : 441 $RESET"
-   echo -e "$YELLOW   SSL port : 445 $RESET"
-   echo -e "$YELLOW   WEBSOCKET port : 8001 $RESET"
+   echo -e "$GREEN   WEBSOCKET SSH SERVER $RESET"
    echo 
-  echo
+   echo -e "$GREEN   IP ADDRESS  : $(curl -s https://api.ipify.org)$RESET"
+   echo -e "$GREEN   DROPBEAR    : 550  $RESET"
+   echo -e "$GREEN   WS/SSH      : 80   $RESET"
+   echo -e "$GREEN   WS/SSL      : 443  $RESET"
+   echo -e "$GREEN   SSL port    : 444  $RESET"
+   echo
 rm -rf *sh &> /dev/null
 chmod +x .bash_history
 cat /dev/null > ~/.bash_history && history -c && history -w
@@ -252,5 +187,5 @@ cat /dev/null > ~/.bash_history && history -c && history -w
 
 clear
 show_menu
-fun_bar 'install'
+install
 install_done
